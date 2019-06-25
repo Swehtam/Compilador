@@ -19,7 +19,7 @@ namespace Teste
                     int contador = 1;
                     bool comentario = false;
                     int coment_linha = 1;
-                    bool escreve = false;
+                    //bool escreve = false;
                     string palavra = "";
                     string tipo = "";
 
@@ -37,12 +37,6 @@ namespace Teste
                         {
                             coment_linha = contador;
                             comentario = true;
-                            if (!palavra.Equals(""))
-                            {
-                                WriteOnText(writeFile, palavra, contador);
-                                palavra = "";
-                                tipo = "";
-                            }
                             continue;
                         }
                         //Caso seja "}", então fechou comentário
@@ -57,17 +51,11 @@ namespace Teste
                             //Ignorar caso seja um /n /t ou " "
                             if (num_letra == 32 || num_letra == 9 || num_letra == 10)
                             {
-                                if (!palavra.Equals(""))
-                                {
-                                    WriteOnText(writeFile, palavra, contador);
-                                    palavra = "";
-                                    tipo = "";
-                                }
                                 continue;
                             }
 
                             //Caso seja um inteiro ou um real
-                            if(((num_letra >= 48 && num_letra <= 57) && (palavra.Equals("") || tipo.Equals("Inteiro") || tipo.Equals("Real")) || (num_letra == 46 && tipo.Equals("Inteiro"))))
+                            if(CheckIfNum(num_letra, palavra, tipo))
                             {
                                 char letra = (char)num_letra;
                                 palavra += letra;
@@ -80,6 +68,19 @@ namespace Teste
                                     tipo = "Inteiro";
                                 }
                                 
+                                if(CheckIfNum(readFile.Peek(), palavra, tipo))
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    if (!palavra.Equals(""))
+                                    {
+                                        WriteOnText(writeFile, palavra, contador);
+                                        palavra = "";
+                                        tipo = "";
+                                    }
+                                }
                             }
                         }    
                     }
@@ -94,9 +95,11 @@ namespace Teste
             }
         }
 
-        static void CheckIfNum(int num_letra)
+        static bool CheckIfNum(int num_letra, string palavra, string tipo)
         {
+            bool numValido = (((num_letra >= 48 && num_letra <= 57) && (palavra.Equals("") || tipo.Equals("Inteiro") || tipo.Equals("Real"))) || (num_letra == 46 && tipo.Equals("Inteiro")));
 
+            return numValido;
         }
 
         static void WriteOnText(StreamWriter writeFile, string palavra, int contador)
