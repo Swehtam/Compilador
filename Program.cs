@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace Teste
@@ -22,7 +23,7 @@ namespace Teste
                     //bool escreve = false;
                     string palavra = "";
                     string tipo = "";
-
+                    
                     while (readFile.Peek() >= 0)
                     {
                         int num_letra = readFile.Read();
@@ -54,8 +55,81 @@ namespace Teste
                                 continue;
                             }
 
+                            //Caso seja "+" ou "-" 
+                            if (palavra.Equals("") && ((num_letra == 43) || (num_letra == 45)))
+                            {
+                                char caractere = (char)num_letra;
+                                palavra += caractere;
+                                tipo = "Aditivo";
+                                if (!palavra.Equals(""))
+                                {
+                                    WriteOnText(writeFile, palavra, contador, tipo);
+                                    palavra = "";
+                                    tipo = "";
+                                }
+                            }
+
+                            //Caso seja "*" ou "/"
+                            if (palavra.Equals("") && ((num_letra == 42) || (num_letra == 47)))
+                            {
+                                char caractere = (char)num_letra;
+                                palavra += caractere;
+                                tipo = "Multiplicativo";
+                                if (!palavra.Equals(""))
+                                {
+                                    WriteOnText(writeFile, palavra, contador, tipo);
+                                    palavra = "";
+                                    tipo = "";
+                                }
+                            }
+
+                            //Caso seja algum operador relacional
+                            if (palavra.Equals("") || tipo.Equals("Relacional"))
+                            {
+                                bool podeImprimir = true;
+                                switch (num_letra)
+                                {
+                                    //"=" (IGUAL)
+                                    case 61:
+                                        palavra += (char)num_letra;
+                                        tipo = "Relacional";
+                                        break;
+
+                                    //"<" (MENOR)
+                                    case 60:
+                                        palavra += (char)num_letra;
+                                        tipo = "Relacional";
+                                        if ((readFile.Peek() == 61) || (readFile.Peek() == 62))
+                                        {
+                                            podeImprimir = false;
+                                            continue;
+                                        }
+                                        break;
+
+                                    //">" (MAIOR)
+                                    case 62:
+                                        palavra += (char)num_letra;
+                                        tipo = "Relacional";
+                                        if (readFile.Peek() == 61)
+                                        {
+                                            podeImprimir = false;
+                                            continue;
+                                        }
+                                        break;
+
+                                }
+
+                                if (podeImprimir && tipo.Equals("Relacional"))
+                                {
+                                    WriteOnText(writeFile, palavra, contador, tipo);
+                                    palavra = "";
+                                    tipo = "";
+                                }
+
+                            }
+
                             //Caso seja um inteiro ou um real
-                            if(CheckIfNum(num_letra, palavra, tipo))
+                            if (CheckIfNum(num_letra, palavra, tipo))
                             {
                                 char letra = (char)num_letra;
                                 palavra += letra;
@@ -76,7 +150,7 @@ namespace Teste
                                 {
                                     if (!palavra.Equals(""))
                                     {
-                                        WriteOnText(writeFile, palavra, contador);
+                                        WriteOnText(writeFile, palavra, contador, tipo);
                                         palavra = "";
                                         tipo = "";
                                     }
@@ -102,9 +176,10 @@ namespace Teste
             return numValido;
         }
 
-        static void WriteOnText(StreamWriter writeFile, string palavra, int contador)
+
+        static void WriteOnText(StreamWriter writeFile, string palavra, int contador, string tipo)
         {
-            Console.WriteLine(palavra + "       |   blabla  |   " + contador);
+            Console.WriteLine(palavra + "       |   " + tipo  + "|   " + contador);
             writeFile.WriteLine(palavra + "       |   blabla  |   " + contador);
         }
     }
