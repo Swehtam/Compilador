@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Collections;
 
 namespace Teste
 {
@@ -9,11 +10,13 @@ namespace Teste
         {
             string readPath = @"..\..\teste.txt";
             string writePath = @"..\..\writeTeste.txt";
+            Hashtable dicionario = GetHashtable();
 
             // Como ler um arquivo linha por linha
             using (StreamWriter writeFile = new StreamWriter(writePath))
             {
-                writeFile.WriteLine("TOKEN   |   TIPO    |   LINHA");
+                writeFile.WriteLine("TOKEN\t\t|\t\tTIPO\t\t\t|\t\tLINHA");
+                Console.WriteLine("TOKEN\t\t|\t\tTIPO\t\t\t|\t\tLINHA");
                 using (StreamReader readFile = new StreamReader(readPath))
                 {
                     int contador = 1;
@@ -59,14 +62,12 @@ namespace Teste
                             {
                                 char letra = (char)num_letra;
                                 palavra += letra;
+
                                 if(num_letra == 46)
-                                {
                                     tipo = "Real";
-                                }
+
                                 if (tipo.Equals(""))
-                                {
                                     tipo = "Inteiro";
-                                }
                                 
                                 if(CheckIfNum(readFile.Peek(), palavra, tipo))
                                 {
@@ -74,6 +75,7 @@ namespace Teste
                                 }
                                 else
                                 {
+                                    //Lembrar de tirar essa checagem
                                     if (!palavra.Equals(""))
                                     {
                                         WriteOnText(writeFile, palavra, tipo, contador);
@@ -136,12 +138,32 @@ namespace Teste
                                 }
                             }
 
-                            if(tipo.Equals("Atribuição ") && CheckIfAssignment(num_letra))
+                            if(tipo.Equals("Atribuição") && CheckIfAssignment(num_letra))
                             {
                                 palavra += (char)num_letra;
                                 WriteOnText(writeFile, palavra, tipo, contador);
                                 palavra = "";
                                 tipo = "";
+                            }
+
+                            if(CheckIfId(num_letra, palavra, tipo))
+                            {
+                                palavra += (char)num_letra;
+
+                                if(tipo.Equals(""))
+                                    tipo = "Identificador";
+
+                                if(CheckIfId(readFile.Peek(), palavra, tipo))
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    tipo = CheckIfDic(palavra, dicionario);
+                                    WriteOnText(writeFile, palavra, tipo, contador);
+                                    palavra = "";
+                                    tipo = "";
+                                }
                             }
                         }    
                     }
@@ -170,10 +192,60 @@ namespace Teste
             return valido_atr;
         }
 
+        static bool CheckIfLetter(int num_letra)
+        {
+            bool letra_Valido = ((num_letra >= 65 && num_letra <= 90) || (num_letra >= 97 && num_letra <= 122));
+            return letra_Valido;
+        }
+
+        static bool CheckIfId(int num_letra, string palavra, string tipo)
+        {
+            //Caso seja (([a..z] || [A..Z]) && primeira letra) 
+            bool num_Valido = ((CheckIfLetter(num_letra) && palavra.Equals("")) || (tipo.Equals("Identificador") && (CheckIfLetter(num_letra) || (num_letra >= 48 && num_letra <= 57) || (num_letra == 95))));
+            return num_Valido;
+        }
+
+        static string CheckIfDic(string palavra, Hashtable dicionario)
+        {
+            string tipo = "Identificador";
+
+            if (dicionario.ContainsKey(palavra))
+            {
+                tipo = (string)dicionario[palavra];
+            }
+
+            return tipo;
+        }
+
         static void WriteOnText(StreamWriter writeFile, string palavra, string tipo, int contador)
         {
-            Console.WriteLine(palavra + "       |   " + tipo +"  |   " + contador);
-            writeFile.WriteLine(palavra + "       |   " + tipo + "  |   " + contador);
+            Console.WriteLine(palavra + "\t\t|\t\t" + tipo + "\t\t|\t\t" + contador);
+            writeFile.WriteLine(palavra + "\t\t|\t\t" + tipo + "\t\t|\t\t" + contador);
+        }
+
+        static Hashtable GetHashtable()
+        {
+            // Cria a retorna um novo Hashtable.
+            Hashtable hashtable = new Hashtable();
+
+            hashtable.Add("or", "Aditivo");
+            hashtable.Add("and", "Multiplicativo");
+            hashtable.Add("program", "P. reservada");
+            hashtable.Add("var", "P. reservada");
+            hashtable.Add("integer", "P. reservada");
+            hashtable.Add("real", "P. reservada");
+            hashtable.Add("boolean", "P. reservada");
+            hashtable.Add("procedure", "P. reservada");
+            hashtable.Add("begin", "P. reservada");
+            hashtable.Add("end", "P. reservada");
+            hashtable.Add("if", "P. reservada");
+            hashtable.Add("then", "P. reservada");
+            hashtable.Add("else", "P. reservada");
+            hashtable.Add("while", "P. reservada");
+            hashtable.Add("do", "P. reservada");
+            hashtable.Add("not", "P. reservada");
+
+            return hashtable;
         }
     }
 }
