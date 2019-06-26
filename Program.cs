@@ -39,7 +39,7 @@ namespace Teste
                             comentario = true;
                             if (!palavra.Equals(""))
                             {
-                                WriteOnText(writeFile, palavra, contador);
+                                WriteOnText(writeFile, palavra, tipo, contador);
                                 palavra = "";
                                 tipo = "";
                             }
@@ -59,7 +59,7 @@ namespace Teste
                             {
                                 if (!palavra.Equals(""))
                                 {
-                                    WriteOnText(writeFile, palavra, contador);
+                                    WriteOnText(writeFile, palavra, tipo, contador);
                                     palavra = "";
                                     tipo = "";
                                 }
@@ -81,6 +81,67 @@ namespace Teste
                                 }
                                 
                             }
+
+                            //Caso seja um Delimitador
+                            if(palavra.Equals(""))
+                            {
+                                switch (num_letra)
+                                {
+                                    //";" (PONTO E VIRGULA)
+                                    case 59:
+                                        palavra += (char)num_letra;
+                                        tipo = "Delimitador";
+                                        break;
+                                    //"." (PONTO)
+                                    case 46:
+                                        palavra += (char)num_letra;
+                                        tipo = "Delimitador";
+                                        break;
+                                    //":" (DOIS PONTOS)
+                                    case 58:
+                                        palavra += (char)num_letra;
+                                        if (CheckIfAssignment(readFile.Peek()))
+                                        {
+                                            tipo = "Atribuição";
+                                            continue;
+                                        }
+                                        else{
+                                            tipo = "Delimitador";
+                                        }
+                                        break;
+                                    //"(" (ABRE PARENTESIS)
+                                    case 40:
+                                        palavra += (char)num_letra;
+                                        tipo = "Delimitador";
+                                        break;
+                                    //"(" (FECHA PARENTESIS)
+                                    case 41:
+                                        palavra += (char)num_letra;
+                                        tipo = "Delimitador";
+                                        break;
+                                    //"," (VIRGULA)
+                                    case 44:
+                                        palavra += (char)num_letra;
+                                        tipo = "Delimitador";
+                                        break;
+                                }
+
+                                if (tipo.Equals("Delimitador"))
+                                {
+                                    WriteOnText(writeFile, palavra, tipo, contador);
+                                    palavra = "";
+                                    tipo = "";
+                                    continue;
+                                }
+                            }
+
+                            if(tipo.Equals("Atribuição ") && num_letra == 61)
+                            {
+                                palavra += (char)num_letra;
+                                WriteOnText(writeFile, palavra, tipo, contador);
+                                palavra = "";
+                                tipo = "";
+                            }
                         }    
                     }
                     if (comentario)
@@ -99,10 +160,17 @@ namespace Teste
 
         }
 
-        static void WriteOnText(StreamWriter writeFile, string palavra, int contador)
+        static bool CheckIfAssignment(int num_letra)
         {
-            Console.WriteLine(palavra + "       |   blabla  |   " + contador);
-            writeFile.WriteLine(palavra + "       |   blabla  |   " + contador);
+            //Checar se o proximo caracter é "="
+            bool valido_atr = (num_letra == 61);
+            return valido_atr;
+        }
+
+        static void WriteOnText(StreamWriter writeFile, string palavra, string tipo, int contador)
+        {
+            Console.WriteLine(palavra + "       |   " + tipo +"  |   " + contador);
+            writeFile.WriteLine(palavra + "       |   " + tipo + "  |   " + contador);
         }
     }
 }
