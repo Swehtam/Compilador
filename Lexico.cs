@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace Teste
 {
-    class Program
+    class Lexico
     {
         static void Main(string[] args)
         {
