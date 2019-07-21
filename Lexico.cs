@@ -16,8 +16,6 @@ namespace Teste
             // Como ler um arquivo linha por linha
             using (StreamWriter writeFile = new StreamWriter(writePath))
             {
-                writeFile.WriteLine("TOKEN\t\t|\t\tTIPO\t\t\t|\t\tLINHA");
-                Console.WriteLine("TOKEN\t\t|\t\tTIPO\t\t\t|\t\tLINHA");
                 using (StreamReader readFile = new StreamReader(readPath))
                 {
                     int contador = 1;
@@ -124,7 +122,7 @@ namespace Teste
                                 bool podeImprimir = true;
                                 switch (num_letra)
                                 {
-                                    /* DELIMITADORES */
+                                    // DELIMITADORES
                                     //";" (PONTO E VIRGULA)
                                     case 59:
                                         pertence = true;
@@ -168,7 +166,7 @@ namespace Teste
                                         palavra += (char)num_letra;
                                         tipo = "Delimitador";
                                         break;
-                                    /* RELACIONAIS */
+                                    // RELACIONAIS
                                     //"=" (IGUAL)
                                     case 61:
                                         pertence = true;
@@ -265,6 +263,9 @@ namespace Teste
                 }
                 writeFile.Close();
             }
+
+            Sintatico syntacticAnalyzer = new Sintatico();
+            syntacticAnalyzer.Program();
         }
 
         static bool CheckIfNum(int num_letra, string palavra, string tipo)
