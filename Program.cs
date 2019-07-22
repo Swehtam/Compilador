@@ -22,10 +22,12 @@ namespace Teste
                 {
                     int contador = 1;
                     bool comentario = false;
-                    int coment_linha = 1;
+                    int coment_aberto_linha = 1;
                     string palavra = "";
                     string tipo = "";
-                    
+                    bool comentarioNaoAberto = false;
+                    int coment_fechado_linha = 1;
+
                     while (readFile.Peek() >= 0)
                     {
                         //Checa se o simbolo pertence a linguagem ou não
@@ -41,7 +43,7 @@ namespace Teste
                         //Caso seja "{", então abriu comentário
                         else if (num_letra == 123)
                         {
-                            coment_linha = contador;
+                            coment_aberto_linha = contador;
                             comentario = true;
                             pertence = true;
                             continue;
@@ -49,6 +51,11 @@ namespace Teste
                         //Caso seja "}", então fechou comentário
                         else if (num_letra == 125)
                         {
+                            if (!comentario)
+                            {
+                                comentarioNaoAberto = true;
+                                coment_fechado_linha = contador;
+                            }
                             comentario = false;
                             pertence = true;
                             continue;
@@ -93,7 +100,7 @@ namespace Teste
                                 }
                             }
 
-                            //Caso seja um inteiro ou um real
+                            //Caso seja um inteiro ou um real ou potencia
                             if (CheckIfNum(num_letra, palavra, tipo))
                             {
                                 pertence = true;
@@ -102,6 +109,12 @@ namespace Teste
 
                                 if(num_letra == 46)
                                     tipo = "Real";
+
+                                if (num_letra == 69 || num_letra == 101)
+                                    tipo = "QuasePotencia";
+
+                                if (num_letra == 43 || num_letra == 45)
+                                    tipo = "Potencia";
 
                                 if (tipo.Equals(""))
                                     tipo = "Inteiro";
@@ -256,9 +269,13 @@ namespace Teste
                             }
                         }
                     }
+                    if (comentarioNaoAberto)
+                    {
+                        Console.Error.WriteLine("\nComentário fechado e não aberto na linha: " + coment_fechado_linha);
+                    }
                     if (comentario)
                     {
-                        Console.Error.WriteLine("\nComentário aberto e não fechado na linha: " + coment_linha);
+                        Console.Error.WriteLine("\nComentário aberto e não fechado na linha: " + coment_aberto_linha);
                     }
                     readFile.Close();
                     Console.WriteLine($"File has {contador} lines.");
@@ -269,9 +286,16 @@ namespace Teste
 
         static bool CheckIfNum(int num_letra, string palavra, string tipo)
         {
-            bool numValido = (((num_letra >= 48 && num_letra <= 57) && (palavra.Equals("") || tipo.Equals("Inteiro") || tipo.Equals("Real"))) || (num_letra == 46 && tipo.Equals("Inteiro")));
+            bool numValido = (((num_letra >= 48 && num_letra <= 57) && (palavra.Equals("") || tipo.Equals("Inteiro") || tipo.Equals("Real"))) || (num_letra == 46 && tipo.Equals("Inteiro")) || (CheckIfPot(num_letra, tipo)));
 
             return numValido;
+        }
+
+        static bool CheckIfPot(int num_letra, string tipo)
+        {
+            bool potValido = (((tipo.Equals("Real") || tipo.Equals("Inteiro")) && (num_letra == 69 || num_letra == 101)) || (tipo.Equals("QuasePotencia") && (num_letra == 43 || num_letra == 45)) || (tipo.Equals("Potencia") && (num_letra >= 48 && num_letra <= 57)));
+
+            return potValido;
         }
 
         static bool CheckIfAssignment(int num_letra)
