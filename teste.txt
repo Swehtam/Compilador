@@ -2,6 +2,14 @@ program teste; {programa exemplo}
 var
 	valor1: integer;
 	valor2: real;
+procedure troca(valor_1, valor_2: integer);
+var 
+	aux: integer;
+begin
+    aux := valor_1;
+    valor_1 := valor_2;
+    valor_2 := aux;
+end;
 begin
 	valor1 := 10;
 end.
