@@ -10,40 +10,35 @@ valor2		|		Identificador		|		4
 :		|		Delimitador		|		4
 real		|		P. reservada		|		4
 ;		|		Delimitador		|		4
-procedure		|		P. reservada		|		5
-troca		|		Identificador		|		5
-(		|		Delimitador		|		5
-valor_1		|		Identificador		|		5
-,		|		Delimitador		|		5
-valor_2		|		Identificador		|		5
-:		|		Delimitador		|		5
-integer		|		P. reservada		|		5
-)		|		Delimitador		|		5
-;		|		Delimitador		|		5
-var		|		P. reservada		|		6
-aux		|		Identificador		|		7
-:		|		Delimitador		|		7
-integer		|		P. reservada		|		7
-;		|		Delimitador		|		7
-begin		|		P. reservada		|		8
-aux		|		Identificador		|		9
-:=		|		Atribuição		|		9
-valor_1		|		Identificador		|		9
-;		|		Delimitador		|		9
-valor_1		|		Identificador		|		10
-:=		|		Atribuição		|		10
-valor_2		|		Identificador		|		10
-;		|		Delimitador		|		10
-valor_2		|		Identificador		|		11
-:=		|		Atribuição		|		11
+procedure		|		P. reservada		|		6
+troca		|		Identificador		|		6
+(		|		Delimitador		|		6
+valor_1		|		Identificador		|		6
+,		|		Delimitador		|		6
+valor_2		|		Identificador		|		6
+:		|		Delimitador		|		6
+integer		|		P. reservada		|		6
+)		|		Delimitador		|		6
+;		|		Delimitador		|		6
+var		|		P. reservada		|		7
+aux		|		Identificador		|		8
+:		|		Delimitador		|		8
+integer		|		P. reservada		|		8
+;		|		Delimitador		|		8
+begin		|		P. reservada		|		9
+while		|		P. reservada		|		10
+(		|		Delimitador		|		10
+3		|		Inteiro		|		10
+>		|		Relacional		|		10
+2		|		Inteiro		|		10
+)		|		Delimitador		|		10
+do		|		P. reservada		|		10
 aux		|		Identificador		|		11
+:=		|		Atribuição		|		11
+3		|		Inteiro		|		11
 ;		|		Delimitador		|		11
 end		|		P. reservada		|		12
 ;		|		Delimitador		|		12
 begin		|		P. reservada		|		13
-valor1		|		Identificador		|		14
-:=		|		Atribuição		|		14
-10		|		Inteiro		|		14
-;		|		Delimitador		|		14
-end		|		P. reservada		|		15
-.		|		Delimitador		|		15
+end		|		P. reservada		|		14
+.		|		Delimitador		|		14

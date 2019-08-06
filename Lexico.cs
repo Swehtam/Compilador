@@ -334,6 +334,8 @@ namespace Teste
             hashtable.Add("while", "P. reservada");
             hashtable.Add("do", "P. reservada");
             hashtable.Add("not", "P. reservada");
+            hashtable.Add("true", "boolean");
+            hashtable.Add("false", "boolean");
 
             return hashtable;
         }

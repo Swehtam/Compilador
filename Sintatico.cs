@@ -7,7 +7,14 @@ namespace Teste
 {
     class Sintatico
     {
+        //pilha de errors
         static Stack errorStack = new Stack();
+        //pilha para salvar os ids antes de atribuir um tipo
+        static Stack pilhaId = new Stack();
+        //pilha com variaveis do escopo
+        static SemStack pilhaEsc = new SemStack();
+        //pilha para fazer a checagem de tipos
+        static Stack pilhaTipos = new Stack();
 
         public void Program()
         {
@@ -19,13 +26,15 @@ namespace Teste
                 LexLine obj = new LexLine();
                 obj.OpenStreamReader(readFile);
                 obj.NextLine();
-                using(StreamWriter writeFile = new StreamWriter(writePath))
+                pilhaEsc.Add("$", "marcador");
+                using (StreamWriter writeFile = new StreamWriter(writePath))
                 {
                     if (obj.token.Equals("program"))
                     {
                         obj.NextLine();
                         if (obj.type == "Identificador")
                         {
+                            pilhaEsc.Add(obj.token, "program");
                             obj.NextLine();
                             if (obj.token == ";")
                             {
@@ -41,7 +50,7 @@ namespace Teste
                                             errorStack.Clear();
                                             if (obj.token.Equals("."))
                                             {
-                                                Console.WriteLine("\nYAAAAY DEU TUDO CERTO\n");
+                                                Console.WriteLine("\nLexicamente correto.\n");
                                             }
                                             else
                                             {
@@ -51,25 +60,19 @@ namespace Teste
                                         }
                                         else
                                         {
-                                            
+
                                             PrintErrors(writeFile);
-                                            Console.Error.WriteLine("Comandos Compostos não reconhecidos na linha: " + obj.line + ", metodo Program");
-                                            writeFile.WriteLine("Comandos Compostos não reconhecidos na linha: " + obj.line + ", metodo Program");
                                         }
                                     }
                                     else
                                     {
                                         PrintErrors(writeFile);
-                                        Console.Error.WriteLine("Declaração de Subprogramas não reconhecida na linha: " + obj.line + ", metodo Program");
-                                        writeFile.WriteLine("Declaração de Subprogramas não reconhecida na linha: " + obj.line + ", metodo Program");
 
                                     }
                                 }
                                 else
                                 {
                                     PrintErrors(writeFile);
-                                    Console.Error.WriteLine("Declaração de Variáveis não reconhecida na linha: " + obj.line + ", metodo Program");
-                                    writeFile.WriteLine("Declaração de Variáveis não reconhecida na linha: " + obj.line + ", metodo Program");
                                 }
 
                             }
@@ -106,7 +109,10 @@ namespace Teste
                 if (!VariableDeclariationList(obj))
                 {
                     success = false;
-                    errorStack.Push("Lista de Declaração de Variáveis não reconhecida na linha: " + obj.line + ", metodo VariableDeclariation");
+                }
+                else
+                {
+                    errorStack.Clear();
                 }
             }
             return success;
@@ -117,18 +123,23 @@ namespace Teste
             bool success = true;
             if (IdentifierList(obj))
             {
+                errorStack.Clear();
                 if (obj.token.Equals(":"))
                 {
                     obj.NextLine();
                     if (Type(obj))
                     {
+                        errorStack.Clear();
                         if (obj.token.Equals(";"))
                         {
                             obj.NextLine();
-                            if (!RecursiveVariableDeclariationList(obj))
+                            if (RecursiveVariableDeclariationList(obj))
+                            {
+                                errorStack.Clear();
+                            }
+                            else
                             {
                                 success = false;
-                                errorStack.Push("Lista de Declaração de Variáveis Recursiva não reconhecida na linha: " + obj.line + ", metodo VariableDeclariationList");
                             }
                         }
                         else
@@ -141,7 +152,6 @@ namespace Teste
                     else
                     {
                         success = false;
-                        errorStack.Push("Tipo não reconhecido na linha: " + obj.line + ", metodo VariableDeclariationList");
                     }
                 }
                 else
@@ -153,7 +163,6 @@ namespace Teste
             else
             {
                 success = false;
-                errorStack.Push("Lista de Identificadores não reconhecida na linha: " + obj.line + ", metodo VariableDeclariationList");
             }
             return success;
         }
@@ -161,21 +170,26 @@ namespace Teste
         static bool RecursiveVariableDeclariationList(LexLine obj)
         {
             bool success = true;
-            
+
             if (IdentifierList(obj))
             {
+                errorStack.Clear();
                 if (obj.token.Equals(":"))
                 {
                     obj.NextLine();
                     if (Type(obj))
                     {
+                        errorStack.Clear();
                         if (obj.token.Equals(";"))
                         {
                             obj.NextLine();
-                            if (!RecursiveVariableDeclariationList(obj))
+                            if (RecursiveVariableDeclariationList(obj))
+                            {
+                                errorStack.Clear();
+                            }
+                            else
                             {
                                 success = false;
-                                errorStack.Push("Lista de Declaração de Variáveis Recursiva não reconhecida na linha: " + obj.line + ", metodo RecursiveVariableDeclariationList");
                             }
                         }
                         else
@@ -188,7 +202,6 @@ namespace Teste
                     else
                     {
                         success = false;
-                        errorStack.Push("Tipo não reconhecido na linha: " + obj.line + ", metodo RecursiveVariableDeclariationList");
                     }
                 }
                 else
@@ -206,11 +219,29 @@ namespace Teste
             bool success = true;
             if (obj.type.Equals("Identificador"))
             {
+                //POSSIVELMENTE ESSA CHECAGEM TAMBÉM É DESNECESSARIA
+                if(pilhaEsc.X() == 0)
+                {
+                    pilhaId.Push(new SemVar(obj.token, obj.line));
+                }
+                //POSIVELMENTE ESSA PARTE É DESNECESSARIA
+                else
+                {
+                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    if (tipo.Equals("Error"))
+                    {
+                        Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo IdentifierList");
+                    }
+                }
+                
                 obj.NextLine();
-                if (!RecursiveIdentifierList(obj))
+                if (RecursiveIdentifierList(obj))
+                {
+                    errorStack.Clear();
+                }
+                else
                 {
                     success = false;
-                    errorStack.Push("Lista de Identificadores Recursiva não reconhecida na linha: " + obj.line + ", metodo IdentifierList");
                 }
             }
             else
@@ -227,13 +258,34 @@ namespace Teste
             if (obj.token.Equals(","))
             {
                 obj.NextLine();
+                //MESMA COISA DO METODO ANTERIOR
                 if (obj.type.Equals("Identificador"))
                 {
+                    if (pilhaEsc.X() == 0)
+                    {
+                        pilhaId.Push(new SemVar(obj.token, obj.line));
+                    }
+                    else
+                    {
+                        string tipo = pilhaEsc.SearchStack(obj.token);
+                        if (tipo.Equals("Error"))
+                        {
+                            Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo RecursiveIdentifierList");
+                        }
+                        else
+                        {
+                            //COLOCAR DENTRO DA PILHA DE TIPOS
+                        }
+                    }
+
                     obj.NextLine();
-                    if (!RecursiveIdentifierList(obj))
+                    if (RecursiveIdentifierList(obj))
+                    {
+                        errorStack.Clear();
+                    }
+                    else
                     {
                         success = false;
-                        errorStack.Push("Lista de Identificadores Recursiva não reconhecida na linha: " + obj.line + ", metodo RecursiveIdentifierList");
                     }
                 }
                 else
@@ -252,12 +304,15 @@ namespace Teste
             switch (obj.token)
             {
                 case "integer":
+                    pilhaEsc.AddMultId(pilhaId, "inteiro");
                     obj.NextLine();
                     break;
                 case "real":
+                    pilhaEsc.AddMultId(pilhaId, "real");
                     obj.NextLine();
                     break;
                 case "boolean":
+                    pilhaEsc.AddMultId(pilhaId, "boolean");
                     obj.NextLine();
                     break;
                 default:
@@ -272,10 +327,9 @@ namespace Teste
         static bool SubprogramsDeclaration(LexLine obj)
         {
             bool success = true;
-            if (!RecursiveSubprogramsDeclaration(obj))
+            if (RecursiveSubprogramsDeclaration(obj))
             {
-                success = false;
-                errorStack.Push("Declaração de Subprogramas Recursiva não reconhecida na linha: " + obj.line + ", metodo SubprogramsDeclaration");
+               errorStack.Clear();
             }
             return success;
         }
@@ -286,13 +340,17 @@ namespace Teste
             //Como o RecursiveParametersList pode ter a opção 'vazio' então não precisar colocar um else
             if (SubroutineDeclaration(obj))
             {
+                errorStack.Clear();
                 if (obj.token.Equals(";"))
                 {
                     obj.NextLine();
-                    if (!RecursiveSubprogramsDeclaration(obj))
+                    if (RecursiveSubprogramsDeclaration(obj))
+                    {
+                        errorStack.Clear();
+                    }
+                    else
                     {
                         success = false;
-                        errorStack.Push("Declaração de Subprogramas Recursiva não reconhecida na linha: " + obj.line + ", metodo RecursiveSubprogramsDeclaration");
                     }
                 }
                 else
@@ -313,32 +371,41 @@ namespace Teste
                 obj.NextLine();
                 if (obj.type.Equals("Identificador"))
                 {
+                    if (!pilhaEsc.Add(obj.token, "procedure"))
+                    {
+                        Console.WriteLine("Procedimento '" + obj.token + "' ja foi declarada nesse mesmo escopo, linha: " + obj.line + ", metodo Factor2.0");
+                    }
+                    pilhaEsc.Add("$", "marcador");
                     obj.NextLine();
                     if (Arguments(obj))
                     {
+                        errorStack.Clear();
                         if (obj.token.Equals(";"))
                         {
                             obj.NextLine();
                             if (VariableDeclariation(obj))
                             {
+                                errorStack.Clear();
                                 if (SubprogramsDeclaration(obj))
                                 {
+                                    errorStack.Clear();
                                     if (!CompoundCommand(obj))
                                     {
                                         success = false;
-                                        errorStack.Push("Comandos Compostos não reconhecidos na linha: " + obj.line);
+                                    }
+                                    else
+                                    {
+                                        errorStack.Clear();
                                     }
                                 }
                                 else
                                 {
                                     success = false;
-                                    errorStack.Push("Declaração de Subprogramas não reconhecida na linha: " + obj.line + ", metodo SubroutineDeclaration");
                                 }
                             }
                             else
                             {
                                 success = false;
-                                errorStack.Push("Declaração de Variáveis não reconhecida na linha: " + obj.line + ", metodo SubroutineDeclaration");
                             }
                         }
                         else
@@ -350,7 +417,6 @@ namespace Teste
                     else
                     {
                         success = false;
-                        errorStack.Push("Argumentos não reconhecidos na linha: " + obj.line + ", metodo SubroutineDeclaration");
                     }
                 }
                 else
@@ -377,6 +443,7 @@ namespace Teste
                 obj.NextLine();
                 if (ParametersList(obj))
                 {
+                    errorStack.Clear();
                     if (obj.token.Equals(")"))
                     {
                         obj.NextLine();
@@ -390,7 +457,6 @@ namespace Teste
                 else
                 {
                     success = false;
-                    errorStack.Push("Lista de Parametros não reconhecida na linha: " + obj.line + ", metodo Arguments");
                 }
             }
             return success;
@@ -401,21 +467,25 @@ namespace Teste
             bool success = true;
             if (IdentifierList(obj))
             {
+                errorStack.Clear();
                 if (obj.token.Equals(":"))
                 {
                     obj.NextLine();
                     if (Type(obj))
                     {
-                        if (!RecursiveParametersList(obj))
+                        errorStack.Clear();
+                        if (RecursiveParametersList(obj))
+                        {
+                            errorStack.Clear();
+                        }
+                        else
                         {
                             success = false;
-                            errorStack.Push("Lista de Parametros Recursivo não reconhecida na linha: " + obj.line + ", metodo ParametersList");
                         }
                     }
                     else
                     {
                         success = false;
-                        errorStack.Push("Tipo não reconhecido na linha: " + obj.line + ", metodo ParametersList");
                     }
                 }
                 else
@@ -427,7 +497,6 @@ namespace Teste
             else
             {
                 success = false;
-                errorStack.Push("Lista de Identificadores não reconhecida na linha: " + obj.line + ", metodo ParametersList");
             }
             return success;
         }
@@ -442,21 +511,25 @@ namespace Teste
                 obj.NextLine();
                 if (IdentifierList(obj))
                 {
+                    errorStack.Clear();
                     if (obj.token.Equals(":"))
                     {
                         obj.NextLine();
                         if (Type(obj))
                         {
-                            if (!RecursiveParametersList(obj))
+                            errorStack.Clear();
+                            if (RecursiveParametersList(obj))
+                            {
+                                errorStack.Clear();
+                            }
+                            else
                             {
                                 success = false;
-                                errorStack.Push("Lista de Parametros Recursivo não reconhecida na linha: " + obj.line + ", metodo RecursiveParametersList");
                             }
                         }
                         else
                         {
                             success = false;
-                            errorStack.Push("Tipo não reconhecido na linha: " + obj.line + ", metodo RecursiveParametersList");
                         }
                     }
                     else
@@ -468,7 +541,6 @@ namespace Teste
                 else
                 {
                     success = false;
-                    errorStack.Push("Lista de Identificadores não reconhecida na linha: " + obj.line + ", metodo RecursiveParametersList");
                 }
             }
 
@@ -480,11 +552,18 @@ namespace Teste
             bool success = true;
             if (obj.token.Equals("begin"))
             {
+                pilhaEsc.XIncrement();
                 obj.NextLine();
                 if (OptionalCommands(obj))
                 {
+                    errorStack.Clear();
                     if (obj.token.Equals("end"))
                     {
+                        pilhaEsc.XDecrement();
+                        if(pilhaEsc.X() == 0)
+                        {
+                            pilhaEsc.CloseBlock();
+                        }
                         obj.NextLine();
                     }
                     else
@@ -496,7 +575,6 @@ namespace Teste
                 else
                 {
                     success = false;
-                    errorStack.Push("Comandos Opcionais não reconhecidos na linha: " + obj.line + ", metodo CompoundCommand");
                 }
             }
             else
@@ -512,6 +590,7 @@ namespace Teste
             bool success = true;
             if (CommandList(obj))
             {
+                errorStack.Clear();
                 return true;
             }
             return success;
@@ -522,16 +601,19 @@ namespace Teste
             bool success = true;
             if (Command(obj))
             {
-                if (!RecursiveCommandList(obj))
+                errorStack.Clear();
+                if (RecursiveCommandList(obj))
+                {
+                    errorStack.Clear();
+                }
+                else
                 {
                     success = false;
-                    errorStack.Push("Lista de Comandos Recursiva não reconhecida na linha: " + obj.line + ", metodo CommandList");
                 }
             }
             else
             {
                 success = false;
-                errorStack.Push("Comando não reconhecido na linha: " + obj.line + ", metodo CommandList");
             }
             return success;
         }
@@ -539,23 +621,25 @@ namespace Teste
         static bool RecursiveCommandList(LexLine obj)
         {
             bool success = true;
-
             //Como o RecursiveCommandList pode ter a opção 'vazio' então não precisar colocar um else
             if (obj.token.Equals(";"))
             {
                 obj.NextLine();
                 if (Command(obj))
                 {
-                    if (!RecursiveCommandList(obj))
+                    errorStack.Clear();
+                    if (RecursiveCommandList(obj))
+                    {
+                        errorStack.Clear();
+                    }
+                    else
                     {
                         success = false;
-                        errorStack.Push("Lista de Comandos Recursiva não reconhecida na linha: " + obj.line + ", metodo RecursiveCommandList");
                     }
                 }
                 else
                 {
                     success = false;
-                    errorStack.Push("Comando não reconhecido na linha: " + obj.line + ", metodo RecursiveCommandList");
                 }
             }
             return success;
@@ -566,13 +650,21 @@ namespace Teste
             bool success = true;
             if (Variable(obj))
             {
+                errorStack.Clear();
                 if (obj.token.Equals(":="))
                 {
                     obj.NextLine();
                     if (!Expression(obj))
                     {
                         success = false;
-                        errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo Command");
+                    }
+                    else
+                    {
+                        //Essa variavel de tipo corresponde ao tipo resultante do metodo Expressão
+                        string tipo = ((SemVar)pilhaTipos.Pop()).type;
+                        //checagem com o tipo que foi empilhado pelo metodo Variavel
+                        TypeCheck(tipo);
+                        errorStack.Clear();
                     }
                 }
                 else
@@ -583,32 +675,46 @@ namespace Teste
             }
             else if (Procedure(obj))
             {
+                errorStack.Clear();
                 return true;
             }
             else if (CompoundCommand(obj))
             {
+                errorStack.Clear();
                 return true;
             }
             else if (obj.token.Equals("if"))
             {
+                pilhaTipos.Push(new SemVar("if", "boolean", obj.line));
+                ///LIMPANDO TODAS AS CHAMADAS DE METODOS ANTERIORES DENTRO DO METODO COMMAND
+                errorStack.Clear();
                 obj.NextLine();
                 if (Expression(obj))
                 {
+                    //Essa variavel de tipo corresponde ao tipo resultante do metodo Expressão
+                    string tipo = ((SemVar)pilhaTipos.Pop()).type;
+                    //checagem com o tipo que foi empilhado pelo token "if"
+                    TypeCheck(tipo);
+
+                    errorStack.Clear();
                     if (obj.token.Equals("then"))
                     {
                         obj.NextLine();
                         if (Command(obj))
                         {
-                            if (!Else(obj))
+                            errorStack.Clear();
+                            if (Else(obj))
+                            {
+                                errorStack.Clear();
+                            }
+                            else
                             {
                                 success = false;
-                                errorStack.Push("Else  não reconhecido na linha: " + obj.line + ", metodo Command");
                             }
                         }
                         else
                         {
                             success = false;
-                            errorStack.Push("Comando não reconhecida na linha: " + obj.line + ", metodo Command");
                         }
                     }
                     else
@@ -620,21 +726,32 @@ namespace Teste
                 else
                 {
                     success = false;
-                    errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo Command");
                 }
             }
             else if (obj.token.Equals("while"))
             {
+                pilhaTipos.Push(new SemVar("while", "boolean", obj.line));
+                ///LIMPANDO TODAS AS CHAMADAS DE METODOS ANTERIORES DENTRO DO METODO COMMAND
+                errorStack.Clear();
                 obj.NextLine();
                 if (Expression(obj))
                 {
+                    //Essa variavel de tipo corresponde ao tipo resultante do metodo Expressão
+                    string tipo = ((SemVar)pilhaTipos.Pop()).type;
+                    //checagem com o tipo que foi empilhado pelo token "while"
+                    TypeCheck(tipo);
+
+                    errorStack.Clear();
                     if (obj.token.Equals("do"))
                     {
                         obj.NextLine();
                         if (!Command(obj))
                         {
                             success = false;
-                            errorStack.Push("Comando não reconhecida na linha: " + obj.line + ", metodo Command");
+                        }
+                        else
+                        {
+                            errorStack.Clear();
                         }
                     }
                     else
@@ -646,13 +763,11 @@ namespace Teste
                 else
                 {
                     success = false;
-                    errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo Command");
                 }
             }
             else
             {
                 success = false;
-                errorStack.Push("Comando não reconhecido na linha: " + obj.line + ", metodo Command");
             }
             return success;
         }
@@ -668,7 +783,10 @@ namespace Teste
                 if (!Command(obj))
                 {
                     success = false;
-                    errorStack.Push("Comando não reconhecido na linha: " + obj.line + ", metodo Else");
+                }
+                else
+                {
+                    errorStack.Clear();
                 }
             }
             return success;
@@ -679,6 +797,26 @@ namespace Teste
             bool success = true;
             if (obj.type.Equals("Identificador"))
             {
+                if (pilhaEsc.X() == 0)
+                {
+                    if (!pilhaEsc.Add(obj.token, obj.type))
+                    {
+                        Console.WriteLine("Variavel '" + obj.token + "' ja foi declarada nesse mesmo escopo, linha: " + obj.line + ", metodo Variable");
+                    }
+                }
+                else
+                {
+                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    if (tipo.Equals("Error"))
+                    {
+                        Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo Variable");
+                    }
+                    else
+                    {
+                        Console.WriteLine("EMPILHANDO VARIAVEL: " + obj.token + " DO TIPO: " + tipo + " METODO VARIABLE");
+                        pilhaTipos.Push(new SemVar(obj.token, tipo, obj.line));
+                    }
+                }
                 obj.NextLine();
             }
             else
@@ -694,12 +832,29 @@ namespace Teste
             bool success = true;
             if (obj.type.Equals("Identificador"))
             {
+                if (pilhaEsc.X() == 0)
+                {
+                    if (!pilhaEsc.Add(obj.token, "procedure"))
+                    {
+                        Console.WriteLine("Procedimento '" + obj.token + "' ja foi declarada nesse mesmo escopo, linha: " + obj.line + ", metodo Procedure");
+                    }
+                }
+                else
+                {
+                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    if (tipo.Equals("Error"))
+                    {
+                        Console.WriteLine("Procedimento '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo Procedure");
+                    }
+                }
+
                 obj.NextLine();
                 if (obj.token.Equals("("))
                 {
                     obj.NextLine();
                     if (ExpressionList(obj))
                     {
+                        errorStack.Clear();
                         if (obj.token.Equals(")"))
                         {
                             obj.NextLine();
@@ -713,7 +868,6 @@ namespace Teste
                     else
                     {
                         success = false;
-                        errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo Procedure");
                     }
                 }
             }
@@ -730,16 +884,19 @@ namespace Teste
             bool success = true;
             if (Expression(obj))
             {
-                if (!RecursiveExpressionList(obj))
+                errorStack.Clear();
+                if (RecursiveExpressionList(obj))
+                {
+                    errorStack.Clear();
+                }
+                else
                 {
                     success = false;
-                    errorStack.Push("Lista de Expressões Recursiva não reconhecida na linha: " + obj.line + ", metodo ExpressionList");
                 }
             }
             else
             {
                 success = false;
-                errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo ExpressionList");
             }
             return success;
         }
@@ -754,16 +911,19 @@ namespace Teste
                 obj.NextLine();
                 if (Expression(obj))
                 {
-                    if (!RecursiveExpressionList(obj))
+                    errorStack.Clear();
+                    if (RecursiveExpressionList(obj))
+                    {
+                        errorStack.Clear();
+                    }
+                    else
                     {
                         success = false;
-                        errorStack.Push("Lista de Expressões Recursiva não reconhecida na linha: " + obj.line + ", metodo RecursiveExpressionList");
                     }
                 }
                 else
                 {
                     success = false;
-                    errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo RecursiveExpressionList");
                 }
             }
 
@@ -775,19 +935,24 @@ namespace Teste
             bool success = true;
             if (SimpleExpression(obj))
             {
+                errorStack.Clear();
                 if (Relational(obj))
                 {
+                    errorStack.Clear();
                     if (!SimpleExpression(obj))
                     {
                         success = false;
-                        errorStack.Push("Expressão Simples não reconhecida na linha: " + obj.line + ", metodo Expression");
+                    }
+                    else
+                    {
+                        RelaTypeCheck();
+                        errorStack.Clear();
                     }
                 }
             }
             else
             {
                 success = false;
-                errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo Expression");
             }
             return success;
         }
@@ -797,32 +962,40 @@ namespace Teste
             bool success = true;
             if (Term(obj))
             {
-                if (!RecursiveSimpleExpression(obj))
+                errorStack.Clear();
+                if (RecursiveSimpleExpression(obj))
+                {
+                    errorStack.Clear();
+                }
+                else
                 {
                     success = false;
-                    errorStack.Push("Expressão Simples Recursiva não reconhecida na linha: " + obj.line + ", metodo SimpleExpression");
                 }
             }
             else if (Fundamental(obj))
             {
+                errorStack.Clear();
                 if (Term(obj))
                 {
-                    if (!RecursiveSimpleExpression(obj))
+                    ArithTypeCheck();
+                    errorStack.Clear();
+                    if (RecursiveSimpleExpression(obj))
+                    {
+                        errorStack.Clear();
+                    }
+                    else
                     {
                         success = false;
-                        errorStack.Push("Expressão Simples Recursiva não reconhecida na linha: " + obj.line + ", metodo SimpleExpression");
                     }
                 }
                 else
                 {
                     success = false;
-                    errorStack.Push("Termo não reconhecido na linha: " + obj.line + ", metodo SimpleExpression");
                 }
             }
             else
             {
                 success = false;
-                errorStack.Push("Expressão Simples não reconhecida na linha: " + obj.line + ", metodo SimpleExpression");
             }
 
             return success;
@@ -834,18 +1007,34 @@ namespace Teste
             //Como o RecursiveSimpleExpression pode ter a opção 'vazio' então não precisar colocar um else
             if (Additive(obj))
             {
+                //Esse tipo foi salvo dentro do metodo do operador aditivo
+                string tipo = ((SemVar)pilhaTipos.Pop()).type;
+                errorStack.Clear();
                 if (Term(obj))
                 {
-                    if (!RecursiveSimpleExpression(obj))
+                    //Se o operador aditivo selecionado for "or", então será feito a checagem lógica, caso não seja será feito a checagem aritimetica
+                    if (tipo.Equals("inteiro"))
+                    {
+                        ArithTypeCheck();
+                    }
+                    else
+                    {
+                        LogTypeCheck();
+                    }
+
+                    errorStack.Clear();
+                    if (RecursiveSimpleExpression(obj))
+                    {
+                        errorStack.Clear();
+                    }
+                    else
                     {
                         success = false;
-                        errorStack.Push("Expressão Simples Recursiva não reconhecida na linha: " + obj.line + ", metodo RecursiveSimpleExpression");
                     }
                 }
                 else
                 {
                     success = false;
-                    errorStack.Push("Termo não reconhecido na linha: " + obj.line + ", metodo RecursiveSimpleExpression");
                 }
             }
             return success;
@@ -857,16 +1046,19 @@ namespace Teste
 
             if (Factor(obj))
             {
-                if (!RecursiveTerm(obj))
+                errorStack.Clear();
+                if (RecursiveTerm(obj))
+                {
+                    errorStack.Clear();
+                }
+                else
                 {
                     success = false;
-                    errorStack.Push("Termo Recursivo não reconhecido na linha: " + obj.line + ", metodo Term");
                 }
             }
             else
             {
                 success = false;
-                errorStack.Push("Termo não reconhecido na linha: " + obj.line + ", metodo Term");
             }
             return success;
         }
@@ -877,18 +1069,35 @@ namespace Teste
             //Como o RecursiveTerm pode ter a opção 'vazio' então não precisar colocar um else, caso não seja um operador multiplicativo
             if (Multiplicative(obj))
             {
+                //Esse tipo foi salvo dentro do metodo do operador multiplicativo
+                string tipo = ((SemVar)pilhaTipos.Pop()).type;
+                errorStack.Clear();
+
                 if (Factor(obj))
                 {
-                    if (!RecursiveTerm(obj))
+                    //Se o operador multiplicativo selecionado for "and", então será feito a checagem lógica, caso não seja será feito a checagem aritimetica
+                    if (tipo.Equals("inteiro"))
+                    {
+                        ArithTypeCheck();
+                    }
+                    else
+                    {
+                        LogTypeCheck();
+                    }
+
+                    errorStack.Clear();
+                    if (RecursiveTerm(obj))
+                    {
+                        errorStack.Clear();
+                    }
+                    else
                     {
                         success = false;
-                        errorStack.Push("Termo Recursivo não reconhecido na linha: " + obj.line + ", metodo RecursiveTerm");
                     }
                 }
                 else
                 {
                     success = false;
-                    errorStack.Push("Fator não reconhecido na linha: " + obj.line + ", metodo RecursiveTerm");
                 }
             }
 
@@ -902,6 +1111,26 @@ namespace Teste
 
             if (obj.type.Equals("Identificador"))
             {
+                if (pilhaEsc.X() == 0)
+                {
+                    if (!pilhaEsc.Add(obj.token, obj.type))
+                    {
+                        Console.WriteLine("Variavel '" + obj.token + "' ja foi declarada nesse mesmo escopo, linha: " + obj.line + ", metodo Factor");
+                    }
+                }
+                else
+                {
+                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    if (tipo.Equals("Error"))
+                    {
+                        Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo Variable");
+                    }
+                    else
+                    {
+                        Console.WriteLine("EMPILHANDO VARIAVEL: " + obj.token + " DO TIPO: " + tipo + " METODO FACTOR");
+                        pilhaTipos.Push(new SemVar(obj.token, tipo, obj.line));
+                    }
+                }
                 //Consumiu o identificador, então será chamado o próximo token
                 obj.NextLine();
                 if (obj.token.Equals("("))
@@ -910,6 +1139,7 @@ namespace Teste
                     obj.NextLine();
                     if (ExpressionList(obj))
                     {
+                        errorStack.Clear();
                         if (obj.token.Equals(")"))
                         {
                             obj.NextLine();
@@ -923,37 +1153,31 @@ namespace Teste
                     else
                     {
                         success = false;
-                        errorStack.Push("Lista de expressões não reconhecida na linha: " + obj.line + ", metodo Factor");
                     }
 
                 }
             }
             else if (obj.type.Equals("Inteiro"))
             {
+                pilhaTipos.Push(new SemVar(obj.token, "inteiro", obj.line));
                 obj.NextLine();
                 return true;
             }
             else if (obj.type.Equals("Real"))
             {
+                pilhaTipos.Push(new SemVar(obj.token, "real", obj.line));
                 obj.NextLine();
                 return true;
             }
             else if (obj.token.Equals("true"))
             {
+                pilhaTipos.Push(new SemVar(obj.token, "boolean", obj.line));
                 obj.NextLine();
-                if (obj.type.Equals("Identificador"))
-                {
-                    obj.NextLine();
-                    
-                }
-                else
-                {
-                    success = false;
-                    errorStack.Push("Esperado identificador na linha: " + obj.line + ", mas recebeu: " + obj.type);
-                }
+                return true;
             }
             else if (obj.token.Equals("false"))
             {
+                pilhaTipos.Push(new SemVar(obj.token, "boolean", obj.line));
                 obj.NextLine();
                 return true;
             }
@@ -962,6 +1186,7 @@ namespace Teste
                 obj.NextLine();
                 if (Expression(obj))
                 {
+                    errorStack.Clear();
                     if (obj.token.Equals(")"))
                     {
                         obj.NextLine();
@@ -975,16 +1200,21 @@ namespace Teste
                 else
                 {
                     success = false;
-                    errorStack.Push("Expressões não reconhecidas na linha: " + obj.line);
                 }
             }
             else if (obj.token.Equals("not"))
             {
+                pilhaTipos.Push(new SemVar(obj.token, "boolean", obj.line));
                 obj.NextLine();
                 if (!Factor(obj))
                 {
                     success = false;
-                    errorStack.Push("Fator não reconhecido na linha: " + obj.line);
+                }
+                else
+                {
+                    //Nesse ponto é uma operação logica, então para que dê certo o retorno dessa função tem q ser boolean
+                    LogTypeCheck();
+                    errorStack.Clear();
                 }
             }
             else
@@ -1005,9 +1235,11 @@ namespace Teste
             switch (obj.token)
             {
                 case "+":
+                    pilhaTipos.Push(new SemVar("+", "inteiro", obj.line));
                     obj.NextLine();
                     break;
                 case "-":
+                    pilhaTipos.Push(new SemVar("-", "inteiro", obj.line));
                     obj.NextLine();
                     break;
                 default:
@@ -1062,12 +1294,15 @@ namespace Teste
             switch (obj.token)
             {
                 case "+":
+                    pilhaTipos.Push(new SemVar("+", "inteiro", obj.line));
                     obj.NextLine();
                     break;
                 case "-":
+                    pilhaTipos.Push(new SemVar("-", "inteiro", obj.line));
                     obj.NextLine();
                     break;
                 case "or":
+                    pilhaTipos.Push(new SemVar("or", "boolean", obj.line));
                     obj.NextLine();
                     break;
                 default:
@@ -1087,12 +1322,15 @@ namespace Teste
             switch (obj.token)
             {
                 case "*":
+                    pilhaTipos.Push(new SemVar("*", "inteiro", obj.line));
                     obj.NextLine();
                     break;
                 case "/":
+                    pilhaTipos.Push(new SemVar("/", "inteiro", obj.line));
                     obj.NextLine();
                     break;
                 case "and":
+                    pilhaTipos.Push(new SemVar("and", "boolean", obj.line));
                     obj.NextLine();
                     break;
                 default:
@@ -1114,6 +1352,120 @@ namespace Teste
             }
         }
 
+        //METODO PARA FAZER A CHECAGEM DE OPERAÇÕES ARITMETICAS
+        static void ArithTypeCheck()
+        {
+            Console.WriteLine("ENTROU NO ARITMETICO");
+            SemVar topo = (SemVar)pilhaTipos.Pop();
+            SemVar subtopo = (SemVar)pilhaTipos.Pop();
+            Console.WriteLine("TOPO: " + topo.token + " tipo: " + topo.type);
+            Console.WriteLine("SUBTOPO: " + subtopo.token + " tipo: " + subtopo.type);
+
+            if (topo.type.Equals("inteiro") && subtopo.type.Equals("inteiro"))
+            {
+                pilhaTipos.Push(new SemVar("", "inteiro", subtopo.line));
+            }
+            else if (topo.type.Equals("inteiro") && subtopo.type.Equals("real"))
+            {
+                pilhaTipos.Push(new SemVar("", "real", subtopo.line));
+            }
+            else if (topo.type.Equals("real") && subtopo.type.Equals("inteiro"))
+            {
+                pilhaTipos.Push(new SemVar("", "real", subtopo.line));
+            }
+            else if (topo.type.Equals("real") && subtopo.type.Equals("real"))
+            {
+                pilhaTipos.Push(new SemVar("", "real", subtopo.line));
+            }
+            else
+            {
+                if(!topo.type.Equals("inteiro") && !topo.type.Equals("real"))
+                {
+                    Console.WriteLine("Esparado valor númerico, mas recebeu: " + topo.type + ", na liha: " + topo.line);
+                }
+
+                if (!subtopo.type.Equals("inteiro") && !subtopo.type.Equals("real"))
+                {
+                    Console.WriteLine("Esparado valor númerico, mas recebeu: '" + subtopo.type + ", na liha: " + subtopo.line);
+                }
+            }
+        }
+
+        //METODO PARA FAZER A CHECAGEM DE OPERAÇÕES RELACIONAIS
+        static void RelaTypeCheck()
+        {
+            SemVar topo = (SemVar)pilhaTipos.Pop();
+            SemVar subtopo = (SemVar)pilhaTipos.Pop();
+
+            if (topo.type.Equals("inteiro") && subtopo.type.Equals("inteiro"))
+            {
+                pilhaTipos.Push(new SemVar("", "boolean", subtopo.line));
+            }
+            else if (topo.type.Equals("inteiro") && subtopo.type.Equals("real"))
+            {
+                pilhaTipos.Push(new SemVar("", "boolean", subtopo.line));
+            }
+            else if (topo.type.Equals("real") && subtopo.type.Equals("inteiro"))
+            {
+                pilhaTipos.Push(new SemVar("", "boolean", subtopo.line));
+            }
+            else if (topo.type.Equals("real") && subtopo.type.Equals("real"))
+            {
+                pilhaTipos.Push(new SemVar("", "boolean", subtopo.line));
+            }
+            else
+            {
+                if (!topo.type.Equals("inteiro") && !topo.type.Equals("real"))
+                {
+                    Console.WriteLine("Esparado valor númerico, mas recebeu: " + topo.type + ", na liha: " + topo.line);
+                }
+
+                if (!subtopo.type.Equals("inteiro") && !subtopo.type.Equals("real"))
+                {
+                    Console.WriteLine("Esparado valor númerico, mas recebeu: '" + subtopo.type + ", na liha: " + subtopo.line);
+                }
+            }
+        }
+
+        //METODO PARA FAZER A CHECAGEM DE OPERAÇÕES LÓGICAS
+        static void LogTypeCheck()
+        {
+            SemVar topo = (SemVar)pilhaTipos.Pop();
+            SemVar subtopo = (SemVar)pilhaTipos.Pop();
+
+            if (topo.type.Equals("boolean") && subtopo.type.Equals("boolean"))
+            {
+                pilhaTipos.Push(new SemVar("", "boolean", subtopo.line));
+            }
+            else
+            {
+                if (!topo.type.Equals("boolean"))
+                {
+                    Console.WriteLine("Esparado valor booleano, mas recebeu: " + topo.type + ", na liha: " + topo.line);
+                }
+
+                if (!subtopo.type.Equals("boolean"))
+                {
+                    Console.WriteLine("Esparado valor booleano, mas recebeu: '" + subtopo.type + ", na liha: " + subtopo.line);
+                }
+            }
+        }
+
+        //METODO PARA FAZER A CHECAGEM DE TIPO RESULTADO COM VARIAVEL ATRIBUIDA
+        static void TypeCheck(string type)
+        {
+            
+            SemVar topo = (SemVar)pilhaTipos.Pop();
+            
+            if (!topo.type.Equals(type) && !(topo.type.Equals("real") && type.Equals("inteiro")))
+            {
+                Console.WriteLine("Esparado valor '" + topo.type + "' para o token:  '" + topo.token + "', mas recebeu: '" + type + ", na liha: " + topo.line);
+            }
+            else
+            {
+                Console.WriteLine("FEZ A CHECAGEM E DEU CERTO");
+            }
+        }
     }
 
     class LexLine
@@ -1149,5 +1501,144 @@ namespace Teste
             UpdateObject(split_line[0], split_line[1], split_line[2]);
         }
         
+    }
+
+    class SemVar
+    {
+        public string token;
+        public string type;
+        public int line;
+
+        public SemVar(string token, string type)
+        {
+            this.token = token;
+            this.type = type;
+        }
+        
+        public SemVar(string token, int line)
+        {
+            this.token = token;
+            this.line = line;
+        }
+
+        public SemVar(string token, string type, int line)
+        {
+            this.token = token;
+            this.type = type;
+            this.line = line;
+        }
+    }
+
+    class SemStack
+    {
+        ArrayList idStack = new ArrayList();
+        ArrayList xStack = new ArrayList();
+        int idIndex = -1;
+        int xIndex = -1;
+
+        public bool Add(string token, string type)
+        {
+            //tipo do token "$" é  "marcador"
+            if (token.Equals("$"))
+            {
+                idStack.Add(new SemVar(token, type));
+                idIndex++;
+                xStack.Add(0);
+                xIndex++;
+                return true;
+            }
+            else
+            {
+                if (!SearchBlock(token))
+                {
+                    idStack.Add(new SemVar(token, type));
+                    idIndex++;
+                    return true;
+                }
+                else
+                {
+
+                    return false;
+                }
+            }
+        }
+
+        public void CloseBlock()
+        {
+            while (!((SemVar)idStack[idIndex]).token.Equals("$"))
+            {
+                idStack.RemoveAt(idIndex);
+                idIndex--;
+            }
+            //Para excluir "$" de dentro da pilha
+            idStack.RemoveAt(idIndex);
+            idIndex--;
+            xStack.RemoveAt(xIndex);
+            xIndex--;
+        }
+
+        public bool SearchBlock(string token)
+        {
+            int auxIndex = idIndex;
+
+            while (!((SemVar)idStack[auxIndex]).token.Equals("$"))
+            {
+                if (token.Equals(((SemVar)idStack[auxIndex]).token))
+                {
+                    return true;
+                }
+                else
+                {
+                    auxIndex--;
+                }
+            }
+
+            return false;
+        }
+
+        public void AddMultId(Stack pilhaId, string type)
+        {
+            while(pilhaId.Count > 0)
+            {
+                SemVar aux = (SemVar)pilhaId.Pop();
+                if (!Add(aux.token, type))
+                {
+                    Console.WriteLine("Variavel '" + aux.token + "' já foi declarada anteriormente, linha: " + aux.line);
+                }
+            }
+        }
+
+        public string SearchStack(string token)
+        {
+            int auxIndex = idIndex;
+            while(auxIndex != 0)
+            {
+                if (token.Equals(((SemVar)idStack[auxIndex]).token))
+                {
+                    return ((SemVar)idStack[auxIndex]).type;
+                }
+                else
+                {
+                    auxIndex--;
+                }
+            }
+
+            return "Error";
+        }
+
+        public void XIncrement()
+        {
+            xStack[xIndex] = ((int)xStack[xIndex]) + 1;
+        }
+
+        public void XDecrement()
+        {
+            xStack[xIndex] = ((int)xStack[xIndex]) - 1;
+        }
+
+        public int X()
+        {
+            return (int)xStack[xIndex];
+        }
     }
 }
