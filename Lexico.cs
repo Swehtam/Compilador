@@ -360,7 +360,8 @@ namespace Teste
             hashtable.Add("not", "P. reservada");
             hashtable.Add("case", "P. reservada");
             hashtable.Add("of", "P. reservada");
-
+            hashtable.Add("true", "boolean");
+            hashtable.Add("false", "boolean");
             return hashtable;
         }
     }
