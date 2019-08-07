@@ -358,6 +358,8 @@ namespace Teste
             hashtable.Add("while", "P. reservada");
             hashtable.Add("do", "P. reservada");
             hashtable.Add("not", "P. reservada");
+            hashtable.Add("case", "P. reservada");
+            hashtable.Add("of", "P. reservada");
 
             return hashtable;
         }

@@ -649,10 +649,126 @@ namespace Teste
                     errorStack.Push("Expressão não reconhecida na linha: " + obj.line + ", metodo Command");
                 }
             }
+            else if (obj.token.Equals("case"))
+            {
+                obj.NextLine();
+                if (obj.type.Equals("Identificador"))
+                {
+                    obj.NextLine();
+                    if (obj.token.Equals("of"))
+                    {
+                        obj.NextLine();
+                        if (CaseCommandList(obj))
+                        {
+                            if (Else(obj))
+                            {
+                                if (obj.token.Equals("end"))
+                                {
+                                    obj.NextLine();
+                                }
+                                else
+                                {
+                                    success = false;
+                                    Console.Error.WriteLine("Error no end do método Comando");
+                                }
+                            }
+                            {
+                                success = false;
+                                Console.Error.WriteLine("Error no Else do método Comando");
+                            }
+                        }
+                        else
+                        {
+                            success = false;
+                            Console.Error.WriteLine("Lista de comandos de case não reconhecida no metodo Comando");
+                        }
+                    }
+                    else
+                    {
+                        success = false;
+                        Console.Error.WriteLine("Error no of do método Comando");
+                    }
+                }
+                else
+                {
+                    success = false;
+                    Console.Error.WriteLine("Error no identificador do método Comando");
+                }
+            }
             else
             {
                 success = false;
                 errorStack.Push("Comando não reconhecido na linha: " + obj.line + ", metodo Command");
+            }
+            return success;
+        }
+
+        static bool CaseCommandList(LexLine obj)
+        {
+            bool success = true;
+            if (obj.type.Equals("Inteiro"))
+            {
+                obj.NextLine();
+                if (obj.token.Equals(":"))
+                {
+                    obj.NextLine();
+                    if (CommandList(obj))
+                    {
+                        if (!RecursiveCaseCommandList(obj))
+                        {
+                            success = false;
+                            Console.Error.WriteLine("Erro na recursao do case, no metodo do case");
+
+                        }
+                    }
+                    else
+                    {
+                        success = false;
+                        Console.Error.WriteLine("Erro na lista de comandos no metodo do case");
+                    }
+                }
+                else{
+                    success = false;
+                    Console.Error.WriteLine("Erro no : no metodo lista de comandos case");
+                }
+            }
+            else
+            {
+                success = false;
+                Console.Error.WriteLine("Erro no inteiro da lista de comandos do case");
+            }
+            return success;
+        }
+
+        static bool RecursiveCaseCommandList(LexLine obj)
+        {
+            bool success = true;
+            if (obj.type.Equals("Inteiro"))
+            {
+                obj.NextLine();
+                if (obj.token.Equals(":"))
+                {
+                    obj.NextLine();
+                    if (CommandList(obj))
+                    {
+                        if (!RecursiveCaseCommandList(obj))
+                        {
+                            success = false;
+                            Console.Error.WriteLine("Erro na recursao do case, no metodo recursivo do case");
+
+                        }
+                    }
+                    else
+                    {
+                        success = false;
+                        Console.Error.WriteLine("Erro na lista de comandos no metodo na recursao do case");
+                    }
+                }
+                else
+                {
+                    success = false;
+                    Console.Error.WriteLine("Erro no : no metodo lista de comandos case");
+                }
             }
             return success;
         }
