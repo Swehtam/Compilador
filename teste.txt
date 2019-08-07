@@ -3,12 +3,16 @@ var
 	valor1: integer;
 	valor2: real;
 
-	procedure troca(valor_1, valor_2: integer);
+	procedure valor1(valor_1, valor_2: integer);
 	var 
 		aux: integer;
 	begin
-		while ( 3 > 2) do
+		if ( 3 > 2) then
 			aux := 3;
 	end;
 begin
+	begin
+		while (3 + 2 and true) do
+				valor2 := 4;
+	end;
 end.

@@ -227,7 +227,7 @@ namespace Teste
                 //POSIVELMENTE ESSA PARTE É DESNECESSARIA
                 else
                 {
-                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    string tipo = pilhaEsc.SearchStack(obj.token, "procedure", false);
                     if (tipo.Equals("Error"))
                     {
                         Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo IdentifierList");
@@ -259,7 +259,7 @@ namespace Teste
             {
                 obj.NextLine();
                 //MESMA COISA DO METODO ANTERIOR
-                if (obj.type.Equals("Identificador"))
+                if (obj.type.Equals("Identificador") )
                 {
                     if (pilhaEsc.X() == 0)
                     {
@@ -267,7 +267,7 @@ namespace Teste
                     }
                     else
                     {
-                        string tipo = pilhaEsc.SearchStack(obj.token);
+                        string tipo = pilhaEsc.SearchStack(obj.token, "procedure", false);
                         if (tipo.Equals("Error"))
                         {
                             Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo RecursiveIdentifierList");
@@ -767,9 +767,36 @@ namespace Teste
             }
             else if (obj.token.Equals("case"))
             {
+                pilhaTipos.Push(new SemVar("case", "inteiro", obj.line));
                 obj.NextLine();
                 if (obj.type.Equals("Identificador"))
                 {
+                    if (pilhaEsc.X() == 0)
+                    {
+                        if (!pilhaEsc.Add(obj.token, obj.type))
+                        {
+                            Console.WriteLine("Variavel '" + obj.token + "' ja foi declarada nesse mesmo escopo, linha: " + obj.line + ", metodo Variable");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("ENTROU AQUI NO PROCEDURE: " + obj.token);
+                        string tipo = pilhaEsc.SearchStack(obj.token, "procedure", false);
+                        if (tipo.Equals("Error"))
+                        {
+                            Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo Variable");
+                        }
+                        else
+                        {
+                            Console.WriteLine("EMPILHANDO VARIAVEL: " + obj.token + " DO TIPO: " + tipo + " METODO VARIABLE");
+                            pilhaTipos.Push(new SemVar(obj.token, tipo, obj.line));
+                        }
+                    }
+                    //Essa variavel de tipo corresponde ao tipo resultante do metodo Expressão
+                    string type = ((SemVar)pilhaTipos.Pop()).type;
+                    //checagem com o tipo que foi empilhado pelo token "if"
+                    TypeCheck(type);
+
                     obj.NextLine();
                     if (obj.token.Equals("of"))
                     {
@@ -922,7 +949,8 @@ namespace Teste
                 }
                 else
                 {
-                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    Console.WriteLine("ENTROU AQUI NO PROCEDURE: " + obj.token);
+                    string tipo = pilhaEsc.SearchStack(obj.token, "procedure", false);
                     if (tipo.Equals("Error"))
                     {
                         Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo Variable");
@@ -957,7 +985,7 @@ namespace Teste
                 }
                 else
                 {
-                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    string tipo = pilhaEsc.SearchStack(obj.token, "procedure", true);
                     if (tipo.Equals("Error"))
                     {
                         Console.WriteLine("Procedimento '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo Procedure");
@@ -967,6 +995,7 @@ namespace Teste
                 obj.NextLine();
                 if (obj.token.Equals("("))
                 {
+                    
                     obj.NextLine();
                     if (ExpressionList(obj))
                     {
@@ -1236,7 +1265,7 @@ namespace Teste
                 }
                 else
                 {
-                    string tipo = pilhaEsc.SearchStack(obj.token);
+                    string tipo = pilhaEsc.SearchStack(obj.token, "procedure", false);
                     if (tipo.Equals("Error"))
                     {
                         Console.WriteLine("Variavel '" + obj.token + "' não foi declarada anteriormente, linha: " + obj.line + ", metodo Variable");
@@ -1593,6 +1622,10 @@ namespace Teste
         public string type = null;
         public int line = 0;
 
+        public string stashedToken = null;
+        public string stashedType = null;
+        public int stashedLine = 0;
+
         public void OpenStreamReader(StreamReader readFile)
         {
             this.readFile = readFile;
@@ -1617,6 +1650,12 @@ namespace Teste
             UpdateObject(split_line[0], split_line[1], split_line[2]);
         }
         
+        public void StashObj()
+        {
+            stashedLine = this.line;
+            stashedType = this.type;
+            stashedToken = this.token;
+        }
     }
 
     class SemVar
@@ -1665,15 +1704,14 @@ namespace Teste
             }
             else
             {
-                if (!SearchBlock(token))
+                if (!SearchBlock(token, type))
                 {
                     idStack.Add(new SemVar(token, type));
                     idIndex++;
                     return true;
                 }
                 else
-                {
-
+                { 
                     return false;
                 }
             }
@@ -1693,7 +1731,7 @@ namespace Teste
             xIndex--;
         }
 
-        public bool SearchBlock(string token)
+        public bool SearchBlock(string token, string type)
         {
             int auxIndex = idIndex;
 
@@ -1701,7 +1739,25 @@ namespace Teste
             {
                 if (token.Equals(((SemVar)idStack[auxIndex]).token))
                 {
-                    return true;
+                    if(type.Equals("procedure") && ((SemVar)idStack[auxIndex]).type.Equals("procedure"))
+                    {
+                        return true;
+                    }
+                    else if(type.Equals("procedure") && !((SemVar)idStack[auxIndex]).type.Equals("procedure"))
+                    {
+                        return false;
+                    }else if((type.Equals("integer") || type.Equals("real") || type.Equals("boolean")) && ((SemVar)idStack[auxIndex]).type.Equals("procedure"))
+                    {
+                        return false;
+                    }
+                    else if((type.Equals("integer") || type.Equals("real") || type.Equals("boolean")) && !((SemVar)idStack[auxIndex]).type.Equals("procedure"))
+                    {
+                        return true;
+                    }
+                    else if(((SemVar)idStack[auxIndex]).type.Equals("program"))
+                    {
+                        return false;
+                    }
                 }
                 else
                 {
@@ -1724,14 +1780,35 @@ namespace Teste
             }
         }
 
-        public string SearchStack(string token)
+        public string SearchStack(string token, string type, bool foundable)
         {
             int auxIndex = idIndex;
             while(auxIndex != 0)
             {
                 if (token.Equals(((SemVar)idStack[auxIndex]).token))
                 {
-                    return ((SemVar)idStack[auxIndex]).type;
+                    if (foundable)
+                    {
+                        if (type.Equals(((SemVar)idStack[auxIndex]).type))
+                        {
+                            return ((SemVar)idStack[auxIndex]).type;
+                        }
+                        else
+                        {
+                            auxIndex--;
+                        }
+                    }
+                    else
+                    {
+                        if (type.Equals(((SemVar)idStack[auxIndex]).type))
+                        {
+                            auxIndex--;
+                        }
+                        else
+                        {
+                            return ((SemVar)idStack[auxIndex]).type;
+                        }
+                    }
                 }
                 else
                 {
